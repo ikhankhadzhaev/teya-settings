@@ -1,0 +1,341 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Настройки ассистента</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+:root{
+  --bg: var(--tg-theme-secondary-bg-color, #EFEFF4);
+  --card: var(--tg-theme-section-bg-color, var(--tg-theme-bg-color, #FFFFFF));
+  --text: var(--tg-theme-text-color, #000000);
+  --hint: var(--tg-theme-hint-color, #8E8E93);
+  --head: var(--tg-theme-section-header-text-color, #6D6D72);
+  --accent: var(--tg-theme-button-color, #2481CC);
+  --accent-text: var(--tg-theme-button-text-color, #FFFFFF);
+  --danger: var(--tg-theme-destructive-text-color, #E53935);
+  --line: color-mix(in srgb, var(--hint) 28%, transparent);
+  --field: color-mix(in srgb, var(--hint) 12%, var(--card));
+}
+@media (prefers-color-scheme: dark){
+  :root:not(.tg){ --bg:#0F0F0F; --card:#1C1C1E; --text:#FFFFFF; --hint:#8E8E93; --head:#8E8E93; }
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--text);font:16px/1.4 -apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,sans-serif;padding:12px 0 96px}
+.wrap{max-width:560px;margin:0 auto;padding:0 16px}
+h2{font-size:13px;font-weight:500;color:var(--head);margin:22px 16px 6px;letter-spacing:.01em}
+.card{background:var(--card);border-radius:12px;overflow:hidden}
+.row{display:flex;align-items:center;gap:12px;padding:11px 16px;min-height:46px;position:relative}
+.row + .row::before{content:"";position:absolute;top:0;left:16px;right:0;border-top:1px solid var(--line)}
+.row .label{flex:1;min-width:0}
+.row .label small{display:block;color:var(--hint);font-size:13px;margin-top:2px}
+.stack{display:block}
+.stack .label{margin-bottom:8px}
+.note{color:var(--hint);font-size:13px;margin:6px 16px 0}
+input[type=text],input[type=number],input[type=time],textarea{font:inherit;color:var(--text);background:var(--field);border:1px solid transparent;border-radius:9px;padding:8px 10px;outline:none;width:100%}
+input:focus,textarea:focus{border-color:var(--accent)}
+textarea{resize:vertical;min-height:84px;line-height:1.4}
+input[type=number]{width:80px;text-align:right}
+input[type=time]{width:auto}
+.counter{display:block;text-align:right;color:var(--hint);font-size:12px;margin-top:4px}
+/* switch */
+.sw{position:relative;width:51px;height:31px;flex:none}
+.sw input{opacity:0;width:0;height:0;position:absolute}
+.sw span{position:absolute;inset:0;border-radius:31px;background:var(--line);transition:background .2s}
+.sw span::after{content:"";position:absolute;width:27px;height:27px;left:2px;top:2px;border-radius:50%;background:#fff;box-shadow:0 2px 4px rgba(0,0,0,.2);transition:transform .2s}
+.sw input:checked + span{background:var(--accent)}
+.sw input:checked + span::after{transform:translateX(20px)}
+.sw input:focus-visible + span{outline:2px solid var(--accent);outline-offset:2px}
+/* segmented */
+.seg{display:flex;background:var(--field);border-radius:9px;padding:2px;gap:2px}
+.seg button{flex:1;font:inherit;font-size:14px;border:0;background:transparent;color:var(--text);padding:7px 8px;border-radius:7px;cursor:pointer}
+.seg button[aria-pressed=true]{background:var(--card);box-shadow:0 1px 3px rgba(0,0,0,.15);font-weight:600}
+/* days */
+.days{display:flex;gap:6px}
+.days button{flex:1;font:inherit;font-size:14px;border:0;border-radius:9px;padding:8px 0;background:var(--field);color:var(--text);cursor:pointer}
+.days button[aria-pressed=true]{background:var(--accent);color:var(--accent-text);font-weight:600}
+.pair{display:flex;align-items:center;gap:8px}
+.pair input[type=time]{flex:1;min-width:0}
+.off{font:inherit;font-size:14px;border:0;background:none;color:var(--accent);cursor:pointer;padding:4px}
+.offlabel{color:var(--hint)}
+/* preview */
+.bubble{background:var(--field);border-radius:14px 14px 14px 4px;padding:10px 12px;white-space:pre-wrap;font-size:15px}
+.tag{display:inline-block;font-size:12px;color:var(--hint)}
+.err{background:color-mix(in srgb,var(--danger) 12%,var(--card));color:var(--danger);border-radius:12px;padding:12px 16px;margin:12px 0}
+button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+#fallbackSave{display:none;width:100%;margin-top:20px;font:inherit;font-weight:600;border:0;border-radius:12px;padding:14px;background:var(--accent);color:var(--accent-text)}
+[hidden]{display:none!important}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div id="error" class="err" hidden></div>
+
+  <div id="form" hidden>
+    <h2>Ответы</h2>
+    <div class="card">
+      <div class="row stack">
+        <div class="label">От чьего имени отвечать</div>
+        <div class="seg" data-key="REPLY_VOICE" role="group" aria-label="Голос автоответов">
+          <button type="button" data-v="first">От моего лица</button>
+          <button type="button" data-v="assistant">От ассистентки</button>
+        </div>
+      </div>
+      <label class="row stack">
+        <div class="label">Стиль ответов<small>Своими словами: тон, что можно говорить, чего нельзя</small></div>
+        <textarea data-key="REPLY_STYLE" maxlength="800" placeholder="Пиши на «вы», коротко. Коллегам можно давать ссылку на общий диск."></textarea>
+        <span class="counter" data-for="REPLY_STYLE"></span>
+      </label>
+      <label class="row stack">
+        <div class="label">Свой текст «меня нет»<small>Пусто — текст напишет Claude. Можно вставить {вернусь} и {причина}</small></div>
+        <textarea data-key="AWAY_TEMPLATE" maxlength="800" placeholder="Привет! Сейчас не на месте ({причина}), вернусь {вернусь}. Сообщение увижу и отвечу."></textarea>
+        <span class="counter" data-for="AWAY_TEMPLATE"></span>
+      </label>
+      <label class="row">
+        <div class="label">Уточняющие вопросы<small>Переспросить детали у того, кто пишет</small></div>
+        <span class="sw"><input type="checkbox" data-key="CLARIFY"><span></span></span>
+      </label>
+      <label class="row">
+        <div class="label">Не больше уточнений в чате</div>
+        <input type="number" min="0" max="5" data-key="CLARIFY_MAX" inputmode="numeric">
+      </label>
+    </div>
+    <h2>Так увидят твой автоответ</h2>
+    <div class="card"><div class="row stack"><div class="bubble" id="preview"></div></div></div>
+
+    <h2>Режимы</h2>
+    <div class="card">
+      <label class="row">
+        <div class="label">Черновики, когда я на месте<small>Готовый ответ тебе на утверждение</small></div>
+        <span class="sw"><input type="checkbox" data-key="DRAFTS_WHEN_PRESENT"><span></span></span>
+      </label>
+      <label class="row">
+        <div class="label">Отвечать на типовое, когда я на месте<small>Вместо черновиков — сам, если ответ есть в базе</small></div>
+        <span class="sw"><input type="checkbox" data-key="REPLY_WHEN_PRESENT"><span></span></span>
+      </label>
+      <label class="row">
+        <div class="label">Учиться на моих ответах</div>
+        <span class="sw"><input type="checkbox" data-key="LEARN_FROM_REPLIES"><span></span></span>
+      </label>
+      <label class="row">
+        <div class="label">Следить за обещаниями</div>
+        <span class="sw"><input type="checkbox" data-key="TRACK_PROMISES"><span></span></span>
+      </label>
+      <label class="row stack">
+        <div class="label">Кому не отвечать самому<small>@username или id через запятую — им только черновики</small></div>
+        <input type="text" data-key="EXCLUDE" placeholder="@boss, @wife" autocapitalize="off" autocomplete="off">
+      </label>
+      <label class="row">
+        <div class="label">Макс. автоответов в чате</div>
+        <input type="number" min="1" max="20" data-key="MAX_REPLIES_PER_CHAT" inputmode="numeric">
+      </label>
+      <label class="row">
+        <div class="label">Молчать после моего ответа, мин</div>
+        <input type="number" min="0" max="600" data-key="TAKEOVER_MINUTES" inputmode="numeric">
+      </label>
+    </div>
+
+    <h2>Расписание</h2>
+    <div class="card">
+      <label class="row">
+        <div class="label">Учитывать рабочие часы<small>Вне их считать, что меня нет</small></div>
+        <span class="sw"><input type="checkbox" data-key="USE_SCHEDULE"><span></span></span>
+      </label>
+      <div class="row stack">
+        <div class="label">Рабочие дни</div>
+        <div class="days" data-key="WORK_DAYS" role="group" aria-label="Рабочие дни">
+          <button type="button" data-d="1">Пн</button><button type="button" data-d="2">Вт</button><button type="button" data-d="3">Ср</button><button type="button" data-d="4">Чт</button><button type="button" data-d="5">Пт</button><button type="button" data-d="6">Сб</button><button type="button" data-d="7">Вс</button>
+        </div>
+      </div>
+      <div class="row stack">
+        <div class="label">Рабочие часы</div>
+        <div class="pair"><input type="time" id="wStart" aria-label="Начало"><span>—</span><input type="time" id="wEnd" aria-label="Конец"></div>
+      </div>
+      <div class="row stack" data-optional-time="MORNING_TIME">
+        <div class="label">Утренний брифинг<small>По рабочим дням</small></div>
+        <div class="pair"><input type="time" aria-label="Время брифинга"><button type="button" class="off">Выкл</button></div>
+      </div>
+      <div class="row stack" data-optional-time="DIGEST_TIME">
+        <div class="label">Вечерняя сводка</div>
+        <div class="pair"><input type="time" aria-label="Время сводки"><button type="button" class="off">Выкл</button></div>
+      </div>
+    </div>
+
+    <h2>Подпись</h2>
+    <div class="card">
+      <label class="row stack">
+        <div class="label">Подпись под автоответами<small>Пусто — без подписи, но тогда люди могут не понять, что это автоответ</small></div>
+        <input type="text" data-key="SIGNATURE" maxlength="120" placeholder="— автоответ">
+      </label>
+    </div>
+
+    <p class="note">Изменения применятся, когда нажмёшь «Сохранить» внизу.</p>
+    <button id="fallbackSave" type="button">Сохранить</button>
+  </div>
+</div>
+
+<script>
+(() => {
+  const tg = window.Telegram && window.Telegram.WebApp;
+  const inTelegram = !!(tg && tg.initData);
+  if (tg) { tg.ready(); tg.expand(); }
+  if (inTelegram) document.documentElement.classList.add("tg");
+
+  const $ = s => document.querySelector(s);
+  const $$ = s => [...document.querySelectorAll(s)];
+  const showError = msg => { const e = $("#error"); e.textContent = msg; e.hidden = false; };
+
+  // --- текущие значения приходят от бота в адресе: #cfg=<base64url JSON>
+  function readConfig() {
+    const m = location.hash.match(/cfg=([A-Za-z0-9_-]+)/);
+    if (!m) return null;
+    try {
+      const b64 = m[1].replace(/-/g, "+").replace(/_/g, "/");
+      const bin = atob(b64 + "===".slice((b64.length + 3) % 4));
+      const bytes = Uint8Array.from(bin, c => c.charCodeAt(0));
+      return JSON.parse(new TextDecoder().decode(bytes));
+    } catch (e) { return null; }
+  }
+  const cfg = readConfig();
+  if (!cfg || typeof cfg !== "object") {
+    showError("Открой эту страницу кнопкой «⚙️ Настройки» в чате с ботом — так в неё попадут твои текущие настройки.");
+    return;
+  }
+  $("#form").hidden = false;
+
+  const initial = {};
+  const state = {};
+
+  // --- заполнение формы
+  function set(key, v) { state[key] = v; }
+  $$("[data-key]").forEach(el => {
+    const key = el.dataset.key;
+    const v = cfg[key] ?? "";
+    initial[key] = v; state[key] = v;
+    if (el.classList.contains("seg")) {
+      el.querySelectorAll("button").forEach(b => {
+        b.setAttribute("aria-pressed", b.dataset.v === v);
+        b.onclick = () => { el.querySelectorAll("button").forEach(x => x.setAttribute("aria-pressed", x === b)); set(key, b.dataset.v); changed(); };
+      });
+    } else if (el.classList.contains("days")) {
+      const on = new Set(String(v).split(",").filter(Boolean));
+      el.querySelectorAll("button").forEach(b => {
+        b.setAttribute("aria-pressed", on.has(b.dataset.d));
+        b.onclick = () => {
+          b.setAttribute("aria-pressed", b.getAttribute("aria-pressed") !== "true");
+          const days = [...el.querySelectorAll("button[aria-pressed=true]")].map(x => x.dataset.d);
+          set(key, days.join(",")); changed();
+        };
+      });
+    } else if (el.type === "checkbox") {
+      el.checked = v === "true";
+      el.onchange = () => { set(key, el.checked ? "true" : "false"); changed(); };
+    } else {
+      el.value = v;
+      el.oninput = () => { set(key, el.value); counter(key); changed(); };
+      counter(key);
+    }
+  });
+
+  function counter(key) {
+    const c = document.querySelector(`.counter[data-for="${key}"]`);
+    const el = document.querySelector(`[data-key="${key}"]`);
+    if (c && el) c.textContent = `${el.value.length} / ${el.maxLength}`;
+  }
+
+  // рабочие часы
+  const [ws, we] = String(cfg.WORK_HOURS || "09:00-18:00").split("-");
+  initial.WORK_HOURS = state.WORK_HOURS = cfg.WORK_HOURS || "";
+  $("#wStart").value = ws; $("#wEnd").value = we;
+  const hours = () => { set("WORK_HOURS", `${$("#wStart").value}-${$("#wEnd").value}`); changed(); };
+  $("#wStart").oninput = hours; $("#wEnd").oninput = hours;
+
+  // брифинг и сводка: время или «выкл»
+  $$("[data-optional-time]").forEach(row => {
+    const key = row.dataset.optionalTime;
+    const input = row.querySelector("input"), off = row.querySelector(".off");
+    const v = cfg[key] || "";
+    initial[key] = state[key] = v;
+    const render = () => {
+      const isOff = !state[key];
+      input.value = state[key] || "";
+      off.textContent = isOff ? "Включить" : "Выкл";
+      input.disabled = isOff;
+      input.style.opacity = isOff ? .4 : 1;
+    };
+    off.onclick = () => { set(key, state[key] ? "" : (key === "MORNING_TIME" ? "09:00" : "19:00")); render(); changed(); };
+    input.oninput = () => { set(key, input.value); changed(); };
+    render();
+  });
+
+  // --- превью автоответа
+  function preview() {
+    const tpl = (state.AWAY_TEMPLATE || "").trim();
+    const name = cfg.OWNER_NAME || "владелец", aname = cfg.ASSISTANT_NAME || "ассистентка";
+    let body;
+    if (tpl) body = tpl.replaceAll("{вернусь}", "сегодня в 15:00").replaceAll("{причина}", "совещание");
+    else if (state.REPLY_VOICE === "assistant") body = `Привет! Это ${aname}, ассистентка. ${name} сейчас на совещании, вернётся сегодня в 15:00 — сообщение увидит и ответит.`;
+    else body = "Привет! Сейчас не на месте, вернусь сегодня в 15:00. Сообщение увижу и отвечу.";
+    if (state.CLARIFY === "true") body += "\n\nУточни, пожалуйста: о каком документе речь и к какому сроку он нужен?";
+    const sig = (state.SIGNATURE || "").trim();
+    $("#preview").textContent = body + (sig ? `\n\n${sig}` : "");
+  }
+
+  // --- что изменилось и отправка
+  function diff() {
+    const out = {};
+    for (const k of Object.keys(state)) {
+      if (String(state[k]) !== String(initial[k])) {
+        let v = String(state[k]);
+        if (["REPLY_STYLE", "AWAY_TEMPLATE", "EXCLUDE", "SIGNATURE", "MORNING_TIME", "DIGEST_TIME"].includes(k) && !v.trim()) v = "-";
+        out[k] = v;
+      }
+    }
+    return out;
+  }
+  function validate(values) {
+    if ("WORK_DAYS" in values && values.WORK_DAYS === "-") return "Выбери хотя бы один рабочий день";
+    if ("WORK_DAYS" in values && !values.WORK_DAYS) return "Выбери хотя бы один рабочий день";
+    if ("WORK_HOURS" in values) {
+      const [a, b] = values.WORK_HOURS.split("-");
+      if (!a || !b || a >= b) return "Рабочие часы: начало должно быть раньше конца";
+    }
+    for (const k of ["CLARIFY_MAX", "MAX_REPLIES_PER_CHAT", "TAKEOVER_MINUTES"])
+      if (k in values && !/^\d+$/.test(values[k])) return "Числа — только целые и не меньше нуля";
+    return null;
+  }
+
+  const fallback = $("#fallbackSave");
+  function changed() {
+    preview();
+    const n = Object.keys(diff()).length;
+    if (inTelegram) {
+      if (n) { tg.MainButton.setText(`Сохранить (${n})`); tg.MainButton.show(); }
+      else tg.MainButton.hide();
+    } else {
+      fallback.style.display = n ? "block" : "none";
+      fallback.textContent = `Сохранить (${n})`;
+    }
+  }
+  function save() {
+    const values = diff();
+    if (!Object.keys(values).length) return;
+    const problem = validate(values);
+    if (problem) { inTelegram ? tg.showAlert(problem) : alert(problem); return; }
+    const data = JSON.stringify({ v: 1, values });
+    if (new TextEncoder().encode(data).length > 4000) {
+      const m = "Слишком много текста за раз — сократи стиль или шаблон и попробуй снова.";
+      inTelegram ? tg.showAlert(m) : alert(m); return;
+    }
+    if (inTelegram) tg.sendData(data);   // бот получит настройки и пришлёт подтверждение; окно закроется само
+    else alert("Сохранять можно только внутри Telegram.\n\n" + data);
+  }
+  if (inTelegram) tg.MainButton.onClick(save); else fallback.onclick = save;
+  preview(); changed();
+})();
+</script>
+</body>
+</html>
